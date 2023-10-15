@@ -73,6 +73,41 @@ own ideas. You can also open an
 [issue](https://github.com/Deep-Symmetry/beat-carabiner/issues) on the
 project.
 
+## Research
+
+This project is being developed with the help of
+[dysentery](https://github.com/Deep-Symmetry/dysentery). Check that
+out for details of the packets and protocol, and for ways you can help
+figure out more. You can also view [Snapshot API
+Documentation](https://deepsymmetry.org/beat-carabiner-java/snapshot/apidocs/) to
+see what is available in the latest preview release.
+
+### Funding
+
+Beat Carabiner Java is, and will remain, completely free and open-source. If it
+has helped you, taught you something, or inspired you, please let us
+know and share some of your discoveries and how you are using it! If
+you'd like to financially support its ongoing development, you are
+welcome (but by no means obligated) to donate to offset the hundreds
+of hours of research, development, and writing that have already been
+invested. Or perhaps to facilitate future efforts, tools, toys, and
+time to explore.
+
+<a href="https://liberapay.com/deep-symmetry/donate"><img align="center" alt="Donate using Liberapay"
+src="https://liberapay.com/assets/widgets/donate.svg"></a> using Liberapay, or
+<a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=J26G6ULJKV8RL"><img align="center"
+alt="Donate" src="https://www.paypalobjects.com/en_US/i/btn/btn_donate_SM.gif"></a> using PayPal
+
+> If enough people jump on board, we may even be able to get more
+> gear to experiment with, although that's an unlikely stretch goal.
+> :grinning:
+
+### Contributing in Other Ways
+
+If you have ideas, discoveries, or even code you’d like to share,
+that’s fantastic! Please take a look at the
+[guidelines](https://github.com/Deep-Symmetry/beat-link/blob/main/CONTRIBUTING.md) and get in touch!
+
 ## Licenses
 
 <a href="http://deepsymmetry.org"><img align="right" alt="Deep Symmetry" src="doc/assets/DS-logo-github.png" width="250" height="150"></a>
