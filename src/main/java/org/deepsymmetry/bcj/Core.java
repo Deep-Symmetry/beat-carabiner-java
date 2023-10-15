@@ -149,6 +149,7 @@ public class Core {
      *
      * @return {@code true} if we are connected to a Carabiner daemon and can synchronize tempos.
      */
+    @API(status = MAINTAINED)
     public boolean isActive() {
         return carabinerSocket.get() != null;
     }
@@ -556,9 +557,9 @@ public class Core {
     }
 
     /**
-     * Get the set of state listeners that are currently registered.
+     * Get the set of disconnection listeners that are currently registered.
      *
-     * @return the currently registered state listeners
+     * @return the currently registered disconnection listeners
      */
     @API(status = MAINTAINED)
     public Set<DisconnectionListener> getDisconnectionListeners() {

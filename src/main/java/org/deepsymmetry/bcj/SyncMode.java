@@ -1,8 +1,13 @@
 package org.deepsymmetry.bcj;
 
+import org.apiguardian.api.API;
+
+import static org.apiguardian.api.API.Status.MAINTAINED;
+
 /**
  * Tracks the synchronization, if any, being performed between the Ableton Link network and the Pro DJ Link network.
  */
+@API(status = MAINTAINED)
 public enum SyncMode {
     /**
      * No synchronization is being performed.

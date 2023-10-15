@@ -1,8 +1,13 @@
 package org.deepsymmetry.bcj;
 
+import org.apiguardian.api.API;
+
+import static org.apiguardian.api.API.Status.INTERNAL;
+
 /**
  * An immutable value class representing a snapshot of the synchronization state.
  */
+@API(status = API.Status.MAINTAINED)
 public class State {
 
     /**
@@ -40,7 +45,7 @@ public class State {
     public final Double linkTempo;
 
     /**
-     * The number of peers that the Ableton Link network reports are connected. Will be {@code null} if
+     * The number of peers that the Ableton Link network reports are connected, will be {@code null} if
      * {@link #running} is {@code false}.
      */
     public final Integer linkPeers;
@@ -63,7 +68,8 @@ public class State {
      * @param linkPeers the peer count reported by the Ableton Link network if we are running
      * @param targetTempo the tempo in BPM, if any, we are forcing Ableton Link to maintain
      */
-    public State(int port, int latency, SyncMode syncMode, boolean syncToBars, boolean running,
+    @API(status = INTERNAL)
+    State(int port, int latency, SyncMode syncMode, boolean syncToBars, boolean running,
                  Double linkTempo, Integer linkPeers, Double targetTempo) {
         this.port = port;
         this.latency = latency;
