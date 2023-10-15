@@ -911,6 +911,8 @@ public class Core {
      * Tell Carabiner to start the Link session playing at the specified future moment, for any participants
      * using Start/Stop Sync. To start it immediately, use {@link #startAbletonTransport()}.
      *
+     * @param microsecondTime the time relative to the system monotonic clock at which you would like playback to begin
+     *
      * @throws IOException if there is a problem talking to the Carabiner daemon
      */
     @API(status = MAINTAINED)
@@ -932,6 +934,8 @@ public class Core {
     /**
      * Tell Carabiner to stop the Link session playing at the specified future moment, for any participants
      * using Start/Stop Sync. To stop it immediately, use {@link #startAbletonTransport()}.
+     *
+     * @param microsecondTime the time relative to the system monotonic clock at which you would like playback to end
      *
      * @throws IOException if there is a problem talking to the Carabiner daemon
      */
