@@ -1,5 +1,9 @@
 package org.deepsymmetry.bcj;
 
+import org.apiguardian.api.API;
+import org.deepsymmetry.beatlink.Beat;
+import org.deepsymmetry.beatlink.MasterAdapter;
+import org.deepsymmetry.beatlink.MasterListener;
 import org.deepsymmetry.beatlink.VirtualCdj;
 import org.deepsymmetry.electro.Metronome;
 import org.deepsymmetry.electro.Snapshot;
@@ -19,14 +23,19 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static org.apiguardian.api.API.Status.EXPERIMENTAL;
+import static org.apiguardian.api.API.Status.MAINTAINED;
+
 /**
  * Manages tempo synchronization between an Ableton Link session and a Pro DJ Link network.
  */
+@API(status = MAINTAINED)
 public class Core {
 
     private static final Logger logger = LoggerFactory.getLogger(Core.class);
@@ -41,6 +50,7 @@ public class Core {
      *
      * @return the only instance of this class that exists.
      */
+    @API(status = MAINTAINED)
     public static Core getInstance() {
         return ourInstance;
     }
@@ -49,7 +59,25 @@ public class Core {
      * Private constructor prevents instantiation other than the singleton instance.
      */
     private Core() {
-        // Nothing to do yet.
+        // Configure and start our daemon synchronization thread that periodically aligns the Pro DJ Link tempo and
+        // beat grid to the Ableton Link session timeline when our sync mode requires it.
+        Thread fullSyncDaemon = new Thread(() -> {
+            while (true) {
+                try {
+                    // If we are due to send a probe to align the Virtual CDJ beat grid to Ableton Link’s, do so.
+                    if (syncMode.get() == SyncMode.FULL && VirtualCdj.getInstance().isTempoMaster()) {
+                        alignPioneerPhaseToAbleton();
+                    }
+                    //noinspection BusyWait
+                    Thread.sleep(200);
+                } catch (Exception e) {
+                    logger.error("Problem aligning Pro DJ Link beat grid with Ableton Link timeline:", e);
+                }
+            }
+        }, "Beat Carabiner Phase Alignment");
+        fullSyncDaemon.setPriority(Thread.MIN_PRIORITY);
+        fullSyncDaemon.setDaemon(true);
+        fullSyncDaemon.start();
     }
 
     /**
@@ -130,6 +158,7 @@ public class Core {
      *
      * @return {@code true} if some form of synchronization is taking place.
      */
+    @API(status = MAINTAINED)
     public synchronized boolean isSyncEnabled() {
         return isActive() && syncMode.get() != SyncMode.OFF;
     }
@@ -142,7 +171,7 @@ public class Core {
      * @throws IllegalStateException if called while connected to a Carabiner daemon
      * @throws IllegalArgumentException if port is less than 1 or more than 65,535
      */
-    @SuppressWarnings("unused")
+    @API(status = MAINTAINED)
     public synchronized void setCarabinerPort(int port) {
         if (isActive()) {
             throw new IllegalStateException("Cannot set port when already connected.");
@@ -158,6 +187,7 @@ public class Core {
      *
      * @return a TCP port number, between 1 and 65,535
      */
+    @API(status = MAINTAINED)
     public int getCarabinerPort() {
         return carabinerPort.get();
     }
@@ -168,6 +198,7 @@ public class Core {
      *
      * @param latency estimated latency in milliseconds until we receive packets reporting a beat has occurred
      */
+    @API(status = MAINTAINED)
     public void setLatency(int latency) {
         if ((latency < 0) || (latency > 1000)) {
             throw new IllegalArgumentException("latency must be in range 1-1000");
@@ -181,6 +212,7 @@ public class Core {
      *
      * @return estimated latency in milliseconds until we receive packets reporting a beat has occurred
      */
+    @API(status = MAINTAINED)
     public int getLatency() {
         return latency.get();
     }
@@ -191,6 +223,7 @@ public class Core {
      *
      * @param syncToBars when {@code true}, synchronization will be at the level of musical bars rather than beats
      */
+    @API(status = MAINTAINED)
     public void setSyncToBars (boolean syncToBars) {
         this.syncToBars.set(syncToBars);
     }
@@ -201,6 +234,7 @@ public class Core {
      *
      * @return an indication of whether synchronization will be at the level of musical bars rather than beats
      */
+    @API(status = MAINTAINED)
     public boolean getSyncToBars() {
         return syncToBars.get();
     }
@@ -271,6 +305,7 @@ public class Core {
      *
      * @param listener the state listener to add
      */
+    @API(status = MAINTAINED)
     public void addStateListener(StateListener listener) {
         if (listener != null) {
             stateListeners.add(listener);
@@ -286,6 +321,7 @@ public class Core {
      *
      * @param listener the state listener to remove
      */
+    @API(status = MAINTAINED)
     public void removeStateListener(StateListener listener) {
         if (listener != null) {
             stateListeners.remove(listener);
@@ -297,6 +333,7 @@ public class Core {
      *
      * @return the currently registered state listeners
      */
+    @API(status = MAINTAINED)
     public Set<StateListener> getStateListeners() {
         return Collections.unmodifiableSet(new HashSet<>(stateListeners));
     }
@@ -321,6 +358,7 @@ public class Core {
      *
      * @return the current configuration and state of synchronization
      */
+    @API(status = MAINTAINED)
     public synchronized State getState() {
         if (!isActive()) {
             return new State(carabinerPort.get(), latency.get(), syncMode.get(), syncToBars.get(), false,
@@ -425,8 +463,8 @@ public class Core {
                 phaseInterval = snapshot.getBeatInterval();
             }
             double phaseDelta = Metronome.findClosestDelta(desiredPhase - actualPhase);
-            int millsecondDelta = (int) (phaseDelta * phaseInterval);
-            if (Math.abs(millsecondDelta) > 0) {
+            int millisecondDelta = (int) (phaseDelta * phaseInterval);
+            if (Math.abs(millisecondDelta) > 0) {
                 // We should drift the Pro DJ Link timeline. But if this would cause us to skip or repeat a beat,
                 // and we are shifting 1/5 of a beat or less, hold off until a safer moment.
                 double beatPhase = VirtualCdj.getInstance().getPlaybackPosition().getBeatPhase();
@@ -440,8 +478,8 @@ public class Core {
 
                 if (Math.floor(beatPhase + beatDelta) == 0.0 ||  // We are staying in the same beat, we are fine
                         Math.abs(beatDelta) > 0.2) {  // We are moving more than 1/5 of a beat, so do it anyway
-                    logger.info("Adjusting Pro DJ Link timeline, millisecondDelta: {}", millsecondDelta);
-                    VirtualCdj.getInstance().adjustPlaybackPosition(millsecondDelta);
+                    logger.info("Adjusting Pro DJ Link timeline, millisecondDelta: {}", millisecondDelta);
+                    VirtualCdj.getInstance().adjustPlaybackPosition(millisecondDelta);
                 }
             }
         } else {
@@ -494,6 +532,7 @@ public class Core {
      *
      * @param listener the disconnection listener to add
      */
+    @API(status = MAINTAINED)
     public void addDisconnectionListener(DisconnectionListener listener) {
         if (listener != null) {
             disconnectionListeners.add(listener);
@@ -509,6 +548,7 @@ public class Core {
      *
      * @param listener the disconnection listener to remove
      */
+    @API(status = MAINTAINED)
     public void removeDisconnectionListener(DisconnectionListener listener) {
         if (listener != null) {
             disconnectionListeners.remove(listener);
@@ -520,6 +560,7 @@ public class Core {
      *
      * @return the currently registered state listeners
      */
+    @API(status = MAINTAINED)
     public Set<DisconnectionListener> getDisconnectionListeners() {
         return Collections.unmodifiableSet(new HashSet<>(disconnectionListeners));
     }
@@ -545,17 +586,14 @@ public class Core {
      */
     private void shutdownEmbeddedCarabiner() {
         if (embeddedCarabiner.get()) {
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        Thread.sleep(100);
-                    } catch (InterruptedException e) {
-                        logger.warn("Interrupted while sleeping before shutting down embedded Carabiner instance.");
-                    }
-                    Runner.getInstance().stop();
-                    embeddedCarabiner.set(false);
+            new Thread(() -> {
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    logger.warn("Interrupted while sleeping before shutting down embedded Carabiner instance.");
                 }
+                Runner.getInstance().stop();
+                embeddedCarabiner.set(false);
             }).start();
         }
     }
@@ -604,6 +642,7 @@ public class Core {
                                         handlePhaseAtTime((Map<String, Object>) message.details);
 
                                     case "version":
+                                        //noinspection DataFlowIssue
                                         handleVersion((String) message.details);
                                         break;
 
@@ -648,6 +687,7 @@ public class Core {
      * gracefully terminate, closing its socket without processing any more responses. Also shuts down the embedded
      * Carabiner process if we started it.
      */
+    @API(status = MAINTAINED)
     public synchronized void disconnect() {
         shutdownEmbeddedCarabiner();
         connectionNumber.incrementAndGet();
@@ -694,8 +734,8 @@ public class Core {
     }
 
     /**
-     * Try to establish a connection to Carabiner. Does nothing if we alreday have one.
-     * First checks to see if there is already an independently manaved instance of Carabiner
+     * Try to establish a connection to Carabiner. Does nothing if we already have one.
+     * First checks to see if there is already an independently managed instance of Carabiner
      * running on the configured port (see {@link #setCarabinerPort(int)}), and if so, simply
      * uses that. Otherwise, checks whether we are on a platform where we can install and run
      * our own temporary copy of Carabiner. If so, tries to do that and connect to it.
@@ -706,6 +746,7 @@ public class Core {
      *
      * @throws IOException if there is a problem opening the connection.
      */
+    @API(status = MAINTAINED)
     public synchronized void connect() throws IOException {
         if (isActive()) {
             return;  // We were already connected.
@@ -729,29 +770,26 @@ public class Core {
         }
 
         // We succeeded in connecting, set up delayed check that it seems to be a Carabiner daemon, and a good version.
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
+        new Thread(() -> {
+            try {
+                Thread.sleep(1000);
+            } catch (Exception e) {
+                logger.warn("Interrupted while sleeping before checking for Carabiner status response.");
+            }
+            if (linkBpm.get() != null) {  // Received a Carabiner status! Check version and configure for start/stop sync.
                 try {
-                    Thread.sleep(1000);
-                } catch (Exception e) {
-                    logger.warn("Interrupted while sleeping before checking for Carabiner status response.");
+                    sendMessage("version");  // Probe whether a recent-enough version is running.
+                } catch (IOException e) {
+                    logger.error("Problem probing Carabiner version.", e);
                 }
-                if (linkBpm.get() != null) {  // Received a Carabiner status! Check version and configure for start/stop sync.
-                    try {
-                        sendMessage("version");  // Probe whether a recent-enough version is running.
-                    } catch (IOException e) {
-                        logger.error("Problem probing Carabiner version.", e);
-                    }
-                    try {
-                        sendMessage("enable-start-stop-sync");  // Set up support for start/stop triggers.
-                    } catch (IOException e) {
-                        logger.error("Problem enabling start/stop sync.", e);
-                    }
-                } else {  // We did not receive a status response.
-                    logger.error("Did not receive expected response from Carabiner, is something else running on the specified port? Disconnecting.");
-                    disconnect();
+                try {
+                    sendMessage("enable-start-stop-sync");  // Set up support for start/stop triggers.
+                } catch (IOException e) {
+                    logger.error("Problem enabling start/stop sync.", e);
                 }
+            } else {  // We did not receive a status response.
+                logger.error("Did not receive expected response from Carabiner, is something else running on the specified port? Disconnecting.");
+                disconnect();
             }
         }).start();
     }
@@ -764,6 +802,7 @@ public class Core {
      *
      * @return whether that tempo can be used with Ableton Link.
      */
+    @API(status = MAINTAINED)
     public boolean isTempoValid(double bpm) {
         return (bpm >= 20.0) && (bpm <= 999.0);
     }
@@ -790,6 +829,7 @@ public class Core {
      * @throws IllegalStateException if the current sync mode is {@link SyncMode#OFF}
      * @throws IOException if there is a problem communicating with Carabiner
      */
+    @API(status = MAINTAINED)
     public void lockTempo(double bpm) throws IOException {
         if (syncMode.get() == SyncMode.OFF) {
             throw new IllegalStateException("Must be synchronizing to lock tempo.");
@@ -803,8 +843,325 @@ public class Core {
     /**
      * Allow the tempo of the Ableton Link session to be controlled by other participants.
      */
+    @API(status = MAINTAINED)
     public void unlockTempo() {
         targetBpm.set(null);
         deliverStateUpdate(getState());
     }
+
+    /**
+     * Find out what beat falls at the specified time in the link timeline, assuming 4 beats
+     * per bar since we are also dealing with Pro DJ Link, and taking into account the configured
+     * latency (see {@link #setLatency(int)}).
+     *
+     * <p>When the response comes, if we are configured to be the tempo master, we will nudge the
+     * link timeline the smallest distance possible so that it had a beat at the same time.</p>
+     *
+     * <p>To align musical bars as well, use {@link #probeAbletonBeatAtTime(long, int)}.</p>
+     *
+     * @param beatMilliseconds the time (according to the system monotonic clock) at which a
+     *                         beat has been received from Pro DJ Link
+     *
+     * @throws IOException if there is a problem talking to the Carabiner daemon
+     */
+    @API(status = EXPERIMENTAL)
+    public void probeAbletonBeatAtTime(long beatMilliseconds) throws IOException {
+        final long adjustedTime = beatMilliseconds - TimeUnit.MILLISECONDS.toMicros(latency.get());
+        abletonBeatTimeProbe.set(adjustedTime);
+        abletonBeatNumberProbe.set(null);
+        sendMessage("beat-at-time " + adjustedTime + " 4.0");
+    }
+
+    /**
+     * Find out what beat falls at the specified time in the link timeline, assuming 4 beats
+     * per bar since we are also dealing with Pro DJ Link, and taking into account the configured
+     * latency (see {@link #setLatency(int)}).
+     *
+     * <p>When the response comes, if we are configured to be the tempo master, we will nudge the
+     * link timeline the smallest distance possible so that it had a beat at the same time.</p>
+     *
+     * <p>To align beats only, use {@link #probeAbletonBeatAtTime(long)}.</p>
+     *
+     * @param beatMilliseconds the time (according to the system monotonic clock) at which a
+     *                         beat has been received from Pro DJ Link
+     * @param beatWithinBar the beat number (ranging from 1 to 4) that was assigned to the beat
+     *
+     * @throws IOException if there is a problem talking to the Carabiner daemon
+     */
+    @API(status = EXPERIMENTAL)
+    public void probeAbletonBeatAtTime(long beatMilliseconds, int beatWithinBar) throws IOException {
+        final long adjustedTime = beatMilliseconds - TimeUnit.MILLISECONDS.toMicros(latency.get());
+        abletonBeatTimeProbe.set(adjustedTime);
+        abletonBeatNumberProbe.set(beatWithinBar);
+        sendMessage("beat-at-time " + adjustedTime + " 4.0");
+    }
+
+    /**
+     * Tell Carabiner to start the Link session playing immediately, for any participants using Start/Stop Sync.
+     * To start it at a particular point on the timeline, use {@link #startAbletonTransport(long)}.
+     *
+     * @throws IOException if there is a problem talking to the Carabiner daemon
+     */
+    @API(status = MAINTAINED)
+    public void startAbletonTransport() throws IOException {
+        startAbletonTransport(TimeUnit.NANOSECONDS.toMicros(System.nanoTime()));
+    }
+
+    /**
+     * Tell Carabiner to start the Link session playing at the specified future moment, for any participants
+     * using Start/Stop Sync. To start it immediately, use {@link #startAbletonTransport()}.
+     *
+     * @throws IOException if there is a problem talking to the Carabiner daemon
+     */
+    @API(status = MAINTAINED)
+    public void startAbletonTransport(long microsecondTime) throws IOException {
+        sendMessage("start-playing " + microsecondTime);
+    }
+
+    /**
+     * Tell Carabiner to stop the Link session playing immediately, for any participants using Start/Stop Sync.
+     * To start it at a particular point on the timeline, use {@link #stopAbletonTransport(long)}.
+     *
+     * @throws IOException if there is a problem talking to the Carabiner daemon
+     */
+    @API(status = MAINTAINED)
+    public void stopAbletonTransport() throws IOException {
+        stopAbletonTransport(TimeUnit.NANOSECONDS.toMicros(System.nanoTime()));
+    }
+
+    /**
+     * Tell Carabiner to stop the Link session playing at the specified future moment, for any participants
+     * using Start/Stop Sync. To stop it immediately, use {@link #startAbletonTransport()}.
+     *
+     * @throws IOException if there is a problem talking to the Carabiner daemon
+     */
+    @API(status = MAINTAINED)
+    public void stopAbletonTransport(long microsecondTime) throws IOException {
+        sendMessage("stop-playing " + microsecondTime);
+    }
+
+    /**
+     * Send a probe that will allow us to align the Virtual CDJ (and thus the Pioneer Pro DJ Link timeline)
+     * to Ableton Link’s.
+     *
+     * @throws IOException if there is a problem talking to the Carabiner daemon
+     */
+    private void alignPioneerPhaseToAbleton() throws IOException {
+        long abletonNow = TimeUnit.NANOSECONDS.toMicros(System.nanoTime()) + TimeUnit.MICROSECONDS.toMicros(latency.get());
+        phaseProbeTime.set(abletonNow);
+        phaseProbeSnapshot.set(VirtualCdj.getInstance().getPlaybackPosition());
+        sendMessage("phase-at-time " + abletonNow + " 4.0");
+    }
+
+    /**
+     * Responds to tempo changes and beat packets from the tempo master CDJ when we are configured to
+     * control the Ableton Link timeline (in {@link SyncMode#PASSIVE} or {@link SyncMode#FULL} mode).
+     */
+    private final MasterListener masterListener = new MasterAdapter() {
+        /**
+         * <p>Invoked when a beat is reported by the tempo master, as long as the {@link org.deepsymmetry.beatlink.BeatFinder} is active.
+         * Even though beats contain far less detailed information than status updates, they can be passed to
+         * {@link VirtualCdj#getLatestStatusFor(org.deepsymmetry.beatlink.DeviceUpdate)} to find the current detailed status for that device,
+         * as long as the Virtual CDJ is active.</p>
+         *
+         * <p>To reduce latency, tempo master updates are delivered to listeners directly on the thread that is receiving them
+         * from the network, so if you want to interact with user interface objects in this method, you need to use
+         * <code><a href="http://docs.oracle.com/javase/8/docs/api/javax/swing/SwingUtilities.html#invokeLater-java.lang.Runnable-">javax.swing.SwingUtilities.invokeLater(Runnable)</a></code>
+         * to do so on the Event Dispatch Thread.</p>
+         *
+         * <p>Even if you are not interacting with user interface objects, any code in this method
+         * <em>must</em> finish quickly, or it will add latency for other listeners, and master updates will back up.
+         * If you want to perform lengthy processing of any sort, do so on another thread.</p>
+         *
+         * @param beat the message which announced the start of the new beat
+         */
+        @Override
+        public void newBeat(Beat beat) {
+            try {
+                if (VirtualCdj.getInstance().isRunning() && beat.isTempoMaster()) {
+                    if (syncToBars.get()) {
+                        probeAbletonBeatAtTime(TimeUnit.NANOSECONDS.toMicros(beat.getTimestamp()), beat.getBeatWithinBar());
+                    } else {
+                        probeAbletonBeatAtTime(TimeUnit.NANOSECONDS.toMicros(beat.getTimestamp()));
+                    }
+                }
+            } catch (Exception e) {
+                logger.error("Problem responding to beat packet in beat-carabiner-java");
+            }
+        }
+
+        @Override
+        public void tempoChanged(double tempo) {
+            if (isTempoValid(tempo)) {
+                try {
+                    lockTempo(tempo);
+                } catch (IOException e) {
+                    logger.error("Problem communicating with Carabiner when responding to Pro DJ Link tempo change:", e);
+                }
+            } else {
+                unlockTempo();
+            }
+        }
+    };
+
+    /**
+     * Start forcing the Ableton Link timeline to follow the tempo and beats (and maybe bars) of the Pioneer
+     * master player.
+     */
+    private void tieAbletonToPioneer() {
+        VirtualCdj.getInstance().addMasterListener(masterListener);
+        masterListener.tempoChanged(VirtualCdj.getInstance().getMasterTempo());
+    }
+
+    /**
+     * Stop forcing the Ableton Link timeline to follow the Pioneer master player.
+     */
+    private void freeAbletonFromPioneer() {
+        VirtualCdj.getInstance().removeMasterListener(masterListener);
+        unlockTempo();
+    }
+
+    /**
+     * Start forcing the Pioneer DJ Link tempo and beat grid to follow the Ableton Link timeline.
+     *
+     * @throws IOException if there is a problem communicating with the Carabiner daemon
+     */
+    private void tiePioneerToAbleton() throws IOException {
+        freeAbletonFromPioneer();  // When we are tempo master, we don’t follow anyone else.
+        alignPioneerPhaseToAbleton();
+        VirtualCdj.getInstance().setTempo(linkBpm.get());
+        VirtualCdj.getInstance().setPlaying(true);
+        VirtualCdj.getInstance().becomeTempoMaster();
+        new Thread(() -> {
+            // Realign the Pro DJ Link tempo in a millisecond or so, in case it gets changed by the outgoing
+            // master during handoff.
+            try {
+                Thread.sleep(1);
+            } catch (InterruptedException e) {
+                logger.warn("Interrupted while sleeping for 1ms, what?", e);
+            }
+            try {
+                sendMessage("status");
+            } catch (IOException e) {
+                logger.error("Problem communicating with Carabiner while tying Pro DJ Link tempo to Ableton Link:", e);
+            }
+        }).start();
+    }
+
+    /**
+     * Stop forcing the Pioneer DJ Link tempo and beat grid to follow the Ableton Link timeline.
+     */
+    private void freePioneerFromAbleton() {
+        VirtualCdj.getInstance().setPlaying(false);
+        // If we are also supposed to be synced in the other direction, it is time to turn that back on.
+        if ((syncMode.get() == SyncMode.PASSIVE || syncMode.get() == SyncMode.FULL) &&
+                VirtualCdj.getInstance().isSynced()) {
+            tieAbletonToPioneer();
+        }
+    }
+
+    /**
+     * Controls whether the Ableton Link session timeline is tied to the tempo and beat grid of the
+     * Pro DJ Link devices. Also reflects that in the sync state of the {@link VirtualCdj} so it can
+     * be seen on the DJ Link network. Finally, if our Sync mode is {@link SyncMode#PASSIVE} or
+     * {@link SyncMode#FULL}, unless we are the tempo master, start tying the Ableton Link session timeline
+     * to the Pioneer DJ Link tempo master.
+     *
+     * @param enabled specifies whether Ableton Link be tied to Pioneer DJ Link
+     */
+    @API(status = MAINTAINED)
+    public void syncAbletonLink(boolean enabled) {
+       if (VirtualCdj.getInstance().isSynced() != enabled) {
+           VirtualCdj.getInstance().setSynced(enabled);
+       }
+       if (enabled) {
+           tieAbletonToPioneer();
+       } else {
+           freeAbletonFromPioneer();
+       }
+    }
+
+    /**
+     * Controls whether the Ableton link session timeline should be the tempo master for the Pro DJ Link devices.
+     * Has no effect if we are not in a compatible sync mode (see {@link #setSyncMode(SyncMode)}).
+     *
+     * @param enabled specifies whether the Ableton Link session should be tempo master if possible
+     *
+     * @throws IOException if there is a problem communicating with the Carabiner daemon
+     */
+    @API(status = MAINTAINED)
+    public void abletonLinkIsMaster(boolean enabled) throws IOException {
+        if (enabled) {
+            if (syncMode.get() == SyncMode.FULL) {
+                tiePioneerToAbleton();
+            }
+        } else {
+            freePioneerFromAbleton();
+        }
+    }
+
+    /**
+     * Validates that the desired mode is compatible with the current state, and if so, updates our state to put us
+     * in that mode and performs any necessary synchronization. Choices are:
+     *
+     * <p>{@link SyncMode#OFF}: No synchronization is attempted.</p>
+     *
+     * <p>{@link SyncMode#MANUAL}: External code will be calling {@link #lockTempo(double)} and {@link #unlockTempo()}
+     * to manipulate the Ableton Link session timeline.</p>
+     *
+     * <p>{@link SyncMode#PASSIVE}: Ableton Link always follows the Pro DJ Link network, and we do not attempt to
+     * control other Pro DJ Link players.</p>
+     *
+     * <p>{@link SyncMode#FULL}: Bidirectional synchronization occurs, determined by the Master and Sync state of
+     * players on the Pro DJ Link network, including Beat Link’s {@link VirtualCdj}, which stands in for the
+     * Ableton Link session.</p>
+     *
+     * @param mode the sync mode that is desired
+     *
+     * @throws IllegalStateException if our current state is incompatible with the desired sync mode
+     * @throws IOException if there is a problem communicating with the Carabiner daemon
+     */
+    @API(status = MAINTAINED)
+    public void setSyncMode(SyncMode mode) throws IOException {
+        if (mode != SyncMode.OFF && !isActive()) {
+            throw new IllegalStateException("Cannot synchronize without an active Carabiner connection.");
+        }
+        if (mode != SyncMode.OFF && !VirtualCdj.getInstance().isRunning()) {
+            throw new IllegalStateException("Cannot synchronize when VirtualCdj isn’t running.");
+        }
+        if (mode == SyncMode.FULL && !VirtualCdj.getInstance().isSendingStatus()) {
+            throw new IllegalStateException("Cannot use full sync mode when VirtualCDJ isn’t sending status packets.");
+        }
+
+        syncMode.set(mode);
+        if (mode == SyncMode.PASSIVE || mode == SyncMode.FULL) {
+            syncAbletonLink(VirtualCdj.getInstance().isSynced());
+            if (mode == SyncMode.FULL && VirtualCdj.getInstance().isTempoMaster()) {
+                tiePioneerToAbleton();
+            }
+        } else {
+            freeAbletonFromPioneer();
+            freePioneerFromAbleton();
+        }
+    }
+
+    /**
+     * Sets the Ableton Link session tempo to the specified number of beats per minute, unless it is already close
+     * enough (within 0.005 beats per minute).
+     *
+     * @param bpm the desired tempo, which must be valid for Ableton Link (between 20 and 999 beats per minute)
+     *
+     * @throws IllegalStateException if we are not connected to a Carabiner daemon
+     * @throws IllegalArgumentException if the tempo is out of range for Ableton Link
+     * @throws IOException if there is a problem communicating with the Carabiner daemon
+     */
+    @API(status = MAINTAINED)
+    public void setAbletonLinkTempo(double bpm) throws IOException {
+        validateTempo(bpm);
+        ensureActive();
+        if (Math.abs(bpm - linkBpm.get()) > 0.005) {
+            sendMessage("bpm " + bpm);
+        }
+    }
+
 }

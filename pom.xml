@@ -9,7 +9,7 @@
   <version>0.1.0-SNAPSHOT</version>
   <packaging>jar</packaging>
 
-  <name>beat-carabiner</name>
+  <name>beat-carabiner-java</name>
   <description>A plain Java implementation of the minimal tempo bridge between Beat Link and Ableton Link.</description>
   <url>https://github.com/Deep-Symmetry/beat-carabiner-java</url>
   <inceptionYear>2023</inceptionYear>
@@ -94,7 +94,11 @@
       <artifactId>electro</artifactId>
       <version>0.1.4</version>
     </dependency>
-  </dependencies>
+    <dependency>
+      <groupId>org.apiguardian</groupId>
+      <artifactId>apiguardian-api</artifactId>
+      <version>1.1.2</version>
+    </dependency>  </dependencies>
 
   <build>
     <pluginManagement>
