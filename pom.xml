@@ -98,7 +98,8 @@
       <groupId>org.apiguardian</groupId>
       <artifactId>apiguardian-api</artifactId>
       <version>1.1.2</version>
-    </dependency>  </dependencies>
+    </dependency>
+  </dependencies>
 
   <build>
     <pluginManagement>
