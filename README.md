@@ -26,10 +26,10 @@ project, all you need is to include the appropriate dependency.
    dependency in a variety of tools, can be found and copied in the **Snippets**
    section by choosing your build tool from the menu.
 
-ee the [API Documentation](http://deepsymmetry.org/beat-carabiner-java/apidocs/)
+See the [API Documentation](http://deepsymmetry.org/beat-carabiner-java/snapshot/apidocs/)
 for full details, but here is a nutshell guide:
 
-**To Do: Write this!**
+**To Do: Write this! And update API docs link to a non-snapshot link after first release!**
 
 Although it is possible to download (or build) and start your own copy
 of [Carabiner](https://github.com/Deep-Symmetry/carabiner) if you are

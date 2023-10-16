@@ -762,7 +762,8 @@ public class Core {
                     Runner.getInstance().start();
                     connectInternal(true);
                 } else {
-                    throw e;
+                    throw new IllegalStateException("Carabiner is not running, and we lack a compatible executable, " +
+                            Runner.getInstance().getExecutableName(), e);
                 }
             }
         } catch (ConnectException e) {
