@@ -379,7 +379,7 @@ public class Carabiner {
      */
     private void handleStatus(Map<String, Object>details) throws IOException {
         linkBpm.set((Double) details.get("bpm"));
-        linkPeers.set((Integer) details.get("peers"));
+        linkPeers.set(((Long) details.get("peers")).intValue());
         checkLinkTempo();
         deliverStateUpdate(getState());
     }

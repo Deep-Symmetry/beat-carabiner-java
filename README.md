@@ -71,7 +71,7 @@ href="https://deep-symmetry.zulipchat.com/#narrow/stream/278354-carabiner">chat
 with our community</a>, ask questions, get inspiration, and share your
 own ideas. You can also open an
 [issue](https://github.com/Deep-Symmetry/beat-carabiner/issues) on the
-project.
+project if you have found something that seems to need fixing.
 
 ## Research
 
