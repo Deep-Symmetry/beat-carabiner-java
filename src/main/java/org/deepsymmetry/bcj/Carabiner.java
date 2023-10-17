@@ -627,7 +627,7 @@ public class Carabiner {
                             int n = input.read(buffer);
                             if (n > 0 && runForConnectionNumber == connectionNumber.get()) {
                                 // We got data, and were not told to shut down while reading.
-                                String response = new String(buffer, StandardCharsets.UTF_8);
+                                String response = new String(buffer, 0, n, StandardCharsets.UTF_8);
                                 logger.debug("Received: {}", response);
                                 for (String line : response.trim().split("\\R")) {
                                     Message message = new Message(line);
