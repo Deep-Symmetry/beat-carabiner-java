@@ -419,7 +419,7 @@ public class Carabiner {
         }
 
         long targetBeat = rawBeat;
-        if ((beatNumber != null) && (time == (Long) details.get("time"))) {
+        if ((beatNumber != null) && (time == (Long) details.get("when"))) {
             targetBeat += adjustment;
         }
         if (targetBeat < 0) {
