@@ -629,29 +629,31 @@ public class Carabiner {
                                 // We got data, and were not told to shut down while reading.
                                 String response = new String(buffer, StandardCharsets.UTF_8);
                                 logger.debug("Received: {}", response);
-                                Message message = new Message(response);
-                                switch (message.messageType) {
-                                    case "status":
-                                        handleStatus((Map<String, Object>) message.details);
-                                        break;
+                                for (String line : response.trim().split("\\R")) {
+                                    Message message = new Message(line);
+                                    switch (message.messageType) {
+                                        case "status":
+                                            handleStatus((Map<String, Object>) message.details);
+                                            break;
 
-                                    case "beat-at-time":
-                                        handleBeatAtTime((Map<String, Object>) message.details);
-                                        break;
+                                        case "beat-at-time":
+                                            handleBeatAtTime((Map<String, Object>) message.details);
+                                            break;
 
-                                    case "phase-at-time":
-                                        handlePhaseAtTime((Map<String, Object>) message.details);
+                                        case "phase-at-time":
+                                            handlePhaseAtTime((Map<String, Object>) message.details);
 
-                                    case "version":
-                                        //noinspection DataFlowIssue
-                                        handleVersion((String) message.details);
-                                        break;
+                                        case "version":
+                                            //noinspection DataFlowIssue
+                                            handleVersion((String) message.details);
+                                            break;
 
-                                    case "unsupported":
-                                        handleUnsupported((Symbol) message.details);
+                                        case "unsupported":
+                                            handleUnsupported((Symbol) message.details);
 
-                                    default:
-                                        logger.error("Unrecognized message from Carabiner: {}", response);
+                                        default:
+                                            logger.error("Unrecognized message from Carabiner: {}", line);
+                                    }
                                 }
                             } else {
                                 // We read zero, meaning the other side closed, or we have been instructed to end.
