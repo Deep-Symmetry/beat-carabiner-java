@@ -15,7 +15,7 @@ public enum SyncMode {
     OFF,
 
     /**
-     * External code will be calling {@link Core#lockTempo(double)} and {@link Core#unlockTempo()} to manipulate the
+     * External code will be calling {@link Carabiner#lockTempo(double)} and {@link Carabiner#unlockTempo()} to manipulate the
      * Ableton Link session.
      */
     MANUAL,

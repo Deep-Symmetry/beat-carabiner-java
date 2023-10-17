@@ -36,14 +36,14 @@ import static org.apiguardian.api.API.Status.MAINTAINED;
  * Manages tempo synchronization between an Ableton Link session and a Pro DJ Link network.
  */
 @API(status = MAINTAINED)
-public class Core {
+public class Carabiner {
 
-    private static final Logger logger = LoggerFactory.getLogger(Core.class);
+    private static final Logger logger = LoggerFactory.getLogger(Carabiner.class);
 
     /**
      * Holds the singleton instance of this class.
      */
-    private static final Core ourInstance = new Core();
+    private static final Carabiner ourInstance = new Carabiner();
 
     /**
      * Get the singleton instance of this class.
@@ -51,14 +51,14 @@ public class Core {
      * @return the only instance of this class that exists.
      */
     @API(status = MAINTAINED)
-    public static Core getInstance() {
+    public static Carabiner getInstance() {
         return ourInstance;
     }
 
     /**
      * Private constructor prevents instantiation other than the singleton instance.
      */
-    private Core() {
+    private Carabiner() {
         // Configure and start our daemon synchronization thread that periodically aligns the Pro DJ Link tempo and
         // beat grid to the Ableton Link session timeline when our sync mode requires it.
         Thread fullSyncDaemon = new Thread(() -> {
