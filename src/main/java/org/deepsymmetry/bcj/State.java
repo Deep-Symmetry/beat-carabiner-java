@@ -17,7 +17,7 @@ public class State {
 
     /**
      * The estimated latency in milliseconds between when a beat is played on a CDJ and when we receive the packet
-     * that reports this has happened.
+     * that reports this has happened. Negative values mean we are seeing the packets before the beats occur.
      */
     public final int latency;
 

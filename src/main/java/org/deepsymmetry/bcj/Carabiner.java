@@ -195,21 +195,21 @@ public class Carabiner {
 
     /**
      * Sets the estimated latency in milliseconds between an actual beat played on a CDJ and when we receive
-     * the packet.
+     * the packet. Negative values mean we are receiving the packets before the actual beats occur.
      *
      * @param latency estimated latency in milliseconds until we receive packets reporting a beat has occurred
      */
     @API(status = MAINTAINED)
     public void setLatency(int latency) {
-        if ((latency < 0) || (latency > 1000)) {
-            throw new IllegalArgumentException("latency must be in range 1-1000");
+        if ((latency < -1000) || (latency > 1000)) {
+            throw new IllegalArgumentException("latency must be in range -1000–1000");
         }
         this.latency.set(latency);
     }
 
     /**
      * Get the estimated latency in milliseconds between an actual beat played on a CDJ and when we receive
-     * the packet.
+     * the packet. Negative values mean we are receiving the packets before the actual beats occur.
      *
      * @return estimated latency in milliseconds until we receive packets reporting a beat has occurred
      */
