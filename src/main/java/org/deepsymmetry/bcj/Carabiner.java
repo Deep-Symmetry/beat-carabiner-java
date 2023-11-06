@@ -282,6 +282,7 @@ public class Carabiner {
             if (Math.abs(tempo - target) > BPM_TOLERANCE) {
                 sendMessage("bpm " + target);
             }
+        } else {
             if (VirtualCdj.getInstance().isTempoMaster() && (tempo > 0.0)) {
                 VirtualCdj.getInstance().setTempo(tempo);
             }
