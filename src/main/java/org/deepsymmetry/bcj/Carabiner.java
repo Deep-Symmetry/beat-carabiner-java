@@ -642,9 +642,9 @@ public class Carabiner {
 
                                         case "phase-at-time":
                                             handlePhaseAtTime((Map<String, Object>) message.details);
+                                            break;
 
                                         case "version":
-                                            //noinspection DataFlowIssue
                                             handleVersion((String) message.details);
                                             break;
 
