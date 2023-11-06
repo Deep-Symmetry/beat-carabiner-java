@@ -650,6 +650,7 @@ public class Carabiner {
 
                                         case "unsupported":
                                             handleUnsupported((Symbol) message.details);
+                                            break;
 
                                         default:
                                             logger.error("Unrecognized message from Carabiner: {}", line);
